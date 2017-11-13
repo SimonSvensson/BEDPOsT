@@ -1,27 +1,19 @@
 import sys, re
 import time
 from datetime import datetime
+import analys
 
-
-if len(sys.argv) != 3:
-	print "Usage: python syncEDA_ACC.py -E=<EDA file> -A=<ACC file>"
-	quit()
-
+def get_argument(string):
+	for x in range(1, len(sys.argv)):
+		if sys.argv[x][:len(string)] == string:
+			return sys.argv[x][len(string):]
+	return ''
 
 #find EDA file from arguments
-EDAfile = ''
-
-for x in range(1, len(sys.argv)):
-	if sys.argv[x][:3] == '-E=':
-		EDAfile = sys.argv[x][3:]
-
+EDAfile = get_argument('-E=')
 
 #find ACC file from arguments
-ACCfile = ''
-for x in range(1, len(sys.argv)):
-	if sys.argv[x][:3] == '-A=':
-		ACCfile = sys.argv[x][3:]
-
+ACCfile = get_argument('-A=')
 
 if len(EDAfile) < 1 or len(ACCfile) < 1:
 	print "Usage: python syncEDA_ACC.py -E=<EDA file> -A=<ACC file>"
@@ -83,7 +75,7 @@ content = [x.strip() for x in content] # removes newline character and whitespac
 
 # the data is now in 'content'
 # Now downsample it
-output = ''
+output = list()
 
 for chunk in range(0,int((len(content)-2)/samplesToCombine)):
 	piecetotal = []
@@ -100,7 +92,7 @@ for chunk in range(0,int((len(content)-2)/samplesToCombine)):
 		if x != 0:
 			outRow += ","
 		outRow += str(piecetotal[x]/samplesToCombine)
-	output += outRow+"\n"
+	output.append(outRow)
 
 if downFile == ACCfile:
 	outACC = output
@@ -110,7 +102,7 @@ else:
 	masterFile = ACCfile
 
 
-output = ''
+output = list()
 # Now read the other file
 f=open(masterFile)
 content = f.readlines()
@@ -118,7 +110,7 @@ f.close()
 content = [x.strip() for x in content] # removes newline character and whitespace at EOL
 
 for x in range(0,len(content)-2):
-	output += content[x+2]+"\n"
+	output.append(content[x+2])
 
 if masterFile == ACCfile:
 	outACC = output
@@ -142,32 +134,24 @@ finalOut += "\n"+str(targetSamplerate)+", "+str(targetSamplerate)+", "+str(targe
 shift = offset*targetSamplerate
 
 
-#lines are better... make it lines instead of massive strings
-linesEDA = outEDA.split("\n")
-linesACC = outACC.split("\n")
-
 EDAcounter = 0
 ACCcounter = 0
 if shift < 0:
 	while shift < 0:
-		finalOut += "\n"+linesEDA[EDAcounter]+",,,"
+		finalOut += "\n"+outEDA[EDAcounter]+",,,"
 		shift += 1
 		EDAcounter += 1
 else:
 	while shift > 0:
-		finalOut += "\n,"+linesACC[ACCcounter]
+		finalOut += "\n,"+outACC[ACCcounter]
 		shift -= 1
 		ACCcounter += 1
 
-#print finalOut
-
 # Now, just print the rest
 counter = 0
-while len(linesEDA) > counter+EDAcounter or len(linesACC) > counter+ACCcounter:
-	finalOut += "\n"+(linesEDA[counter+EDAcounter] if len(linesEDA) > counter+EDAcounter and len(linesEDA[counter+EDAcounter]) > 0 else "")+","+(linesACC[counter+ACCcounter] if len(linesACC) > counter+ACCcounter and len(linesACC[counter+ACCcounter]) > 0 else ",,")
+while len(outEDA) > counter+EDAcounter or len(outACC) > counter+ACCcounter:
+	finalOut += "\n"+(outEDA[counter+EDAcounter] if len(outEDA) > counter+EDAcounter and len(outEDA[counter+EDAcounter]) > 0 else "")+","+(outACC[counter+ACCcounter] if len(outACC) > counter+ACCcounter and len(outACC[counter+ACCcounter]) > 0 else ",,")
 	counter += 1
-
-
 
 
 
